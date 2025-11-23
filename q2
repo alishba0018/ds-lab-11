@@ -1,0 +1,308 @@
+#include <iostream>
+#include <cstring>
+using namespace std;
+
+#define TABLE_SIZE 100
+
+// Node structure for linked list in each bucket
+struct DictNode {
+    char key[50];      // String key
+    char value[100];   // String value
+    DictNode* next;
+    
+    DictNode(const char* k, const char* v) {
+        strcpy(key, k);
+        strcpy(value, v);
+        next = nullptr;
+    }
+};
+
+class DictionaryHashTable {
+private:
+    DictNode* table[TABLE_SIZE];
+    
+    // Hash function: Sum of ASCII values MOD 100
+    int hashFunction(const char* key) {
+        int sum = 0;
+        for (int i = 0; key[i] != '\0'; i++) {
+            sum += (int)key[i];
+        }
+        return sum % TABLE_SIZE;
+    }
+    
+    // Display a single entry
+    void displayEntry(int index) {
+        if (table[index] != nullptr) {
+            cout << "index " << index << ": ";
+            DictNode* temp = table[index];
+            while (temp != nullptr) {
+                cout << "(" << temp->key << ", " << temp->value << ")";
+                if (temp->next != nullptr) cout << " -> ";
+                temp = temp->next;
+            }
+            cout << endl;
+        }
+    }
+    
+public:
+    DictionaryHashTable() {
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            table[i] = nullptr;
+        }
+    }
+    
+    // a) Add_Record: Add a word with its meaning/value
+    void addRecord(const char* key, const char* value) {
+        int index = hashFunction(key);
+        
+        cout << "Inserting (" << key << ", " << value << ")...";
+        cout << " Hash index: " << index << endl;
+        
+        // Check if key already exists (update case)
+        DictNode* temp = table[index];
+        while (temp != nullptr) {
+            if (strcmp(temp->key, key) == 0) {
+                // Key exists, update value
+                cout << "Key '" << key << "' already exists. Updating value...\n";
+                strcpy(temp->value, value);
+                return;
+            }
+            temp = temp->next;
+        }
+        
+        // Create new node and insert at beginning of chain
+        DictNode* newNode = new DictNode(key, value);
+        newNode->next = table[index];
+        table[index] = newNode;
+        
+        cout << "✓ Record added successfully!\n\n";
+    }
+    
+    // b) Word_Search: Search for a word in dictionary
+    void wordSearch(const char* key) {
+        int index = hashFunction(key);
+        
+        cout << "Searching for key '" << key << "'... Hash index: " << index << endl;
+        
+        DictNode* temp = table[index];
+        while (temp != nullptr) {
+            if (strcmp(temp->key, key) == 0) {
+                cout << "✓ Found! Value: " << temp->value << endl;
+                cout << "search key " << key << ": " << temp->value << "\n\n";
+                return;
+            }
+            temp = temp->next;
+        }
+        
+        cout << "✗ Error: Key '" << key << "' not found in dictionary!\n\n";
+    }
+    
+    // Delete a record from dictionary
+    void deleteRecord(const char* key) {
+        int index = hashFunction(key);
+        
+        cout << "Deleting key '" << key << "'... Hash index: " << index << endl;
+        
+        if (table[index] == nullptr) {
+            cout << "✗ Error: Key '" << key << "' not found!\n\n";
+            return;
+        }
+        
+        // If key is at head of chain
+        if (strcmp(table[index]->key, key) == 0) {
+            DictNode* temp = table[index];
+            table[index] = table[index]->next;
+            delete temp;
+            cout << "✓ key " << key << " deleted successfully!\n\n";
+            return;
+        }
+        
+        // Search in the chain
+        DictNode* prev = table[index];
+        DictNode* curr = table[index]->next;
+        
+        while (curr != nullptr) {
+            if (strcmp(curr->key, key) == 0) {
+                prev->next = curr->next;
+                delete curr;
+                cout << "✓ key " << key << " deleted successfully!\n\n";
+                return;
+            }
+            prev = curr;
+            curr = curr->next;
+        }
+        
+        cout << "✗ Error: Key '" << key << "' not found!\n\n";
+    }
+    
+    // c) Print_Dictionary: Display all entries
+    void printDictionary() {
+        cout << "\n========== COMPLETE DICTIONARY ==========\n";
+        cout << "Table Size: " << TABLE_SIZE << endl;
+        cout << "==========================================\n\n";
+        
+        int emptyBuckets = 0;
+        int occupiedBuckets = 0;
+        int totalElements = 0;
+        
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            if (table[i] != nullptr) {
+                occupiedBuckets++;
+                DictNode* temp = table[i];
+                cout << "index " << i << ": ";
+                while (temp != nullptr) {
+                    cout << "(" << temp->key << ", " << temp->value << ")";
+                    totalElements++;
+                    if (temp->next != nullptr) cout << " -> ";
+                    temp = temp->next;
+                }
+                cout << endl;
+            } else {
+                emptyBuckets++;
+            }
+        }
+        
+        cout << "\n==========================================\n";
+        cout << "Statistics:\n";
+        cout << "  Occupied Buckets: " << occupiedBuckets << endl;
+        cout << "  Empty Buckets: " << emptyBuckets << endl;
+        cout << "  Total Elements: " << totalElements << endl;
+        cout << "  Load Factor: " << (float)totalElements / TABLE_SIZE << endl;
+        cout << "==========================================\n\n";
+    }
+    
+    // Display specific bucket
+    void displayBucket(int index) {
+        if (index < 0 || index >= TABLE_SIZE) {
+            cout << "Invalid index!\n";
+            return;
+        }
+        displayEntry(index);
+    }
+    
+    ~DictionaryHashTable() {
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            DictNode* temp = table[i];
+            while (temp != nullptr) {
+                DictNode* next = temp->next;
+                delete temp;
+                temp = next;
+            }
+        }
+    }
+};
+
+// ==================== MAIN ====================
+int main() {
+    cout << "========== TASK 2: ASCII-BASED DICTIONARY USING HASHING ==========\n\n";
+    
+    DictionaryHashTable dictionary;
+    
+    // ==================== DEMO 1: BASIC OPERATIONS ====================
+    cout << "--- DEMO 1: BASIC DICTIONARY OPERATIONS ---\n\n";
+    
+    cout << "a) Adding records to dictionary:\n";
+    cout << "====================================\n";
+    dictionary.addRecord("AB", "FASTNU");
+    dictionary.addRecord("CD", "CS");
+    dictionary.addRecord("EF", "Engineering");
+    dictionary.addRecord("GH", "Mathematics");
+    dictionary.addRecord("IJ", "Physics");
+    dictionary.addRecord("KL", "Chemistry");
+    
+    // ==================== DEMO 2: SEARCH OPERATION ====================
+    cout << "\nb) Searching for words in dictionary:\n";
+    cout << "====================================\n";
+    dictionary.wordSearch("AB");
+    dictionary.wordSearch("CD");
+    dictionary.wordSearch("XYZ");
+    
+    // ==================== DEMO 3: DELETE OPERATION ====================
+    cout << "\nc) Deleting records from dictionary:\n";
+    cout << "====================================\n";
+    dictionary.deleteRecord("EF");
+    dictionary.deleteRecord("XYZ");
+    
+    // ==================== DEMO 4: DISPLAY COMPLETE DICTIONARY ====================
+    dictionary.printDictionary();
+    
+    // ==================== DEMO 5: COLLISION HANDLING ====================
+    cout << "\n--- DEMO 2: COLLISION HANDLING ---\n\n";
+    cout << "Adding words that hash to same index:\n";
+    cout << "====================================\n";
+    
+    DictionaryHashTable collisionDict;
+    
+    // Words that will likely collide
+    collisionDict.addRecord("ABC", "Value1");
+    collisionDict.addRecord("DEF", "Value2");
+    collisionDict.addRecord("GHI", "Value3");
+    
+    cout << "\nDisplaying dictionary with collisions:\n";
+    collisionDict.printDictionary();
+    
+    // ==================== DEMO 6: UPDATE OPERATION ====================
+    cout << "\n--- DEMO 3: UPDATE OPERATION ---\n\n";
+    cout << "Updating existing keys:\n";
+    cout << "====================================\n";
+    collisionDict.addRecord("ABC", "UpdatedValue1");
+    collisionDict.addRecord("GHI", "UpdatedValue3");
+    
+    collisionDict.printDictionary();
+    
+    // ==================== DEMO 7: CALCULATE HASH VALUES ====================
+    cout << "\n--- DEMO 4: HASH VALUE CALCULATIONS ---\n\n";
+    cout << "ASCII Sum and Hash Index for various keys:\n";
+    cout << "====================================\n";
+    
+    const char* testKeys[] = {"AB", "CD", "EF", "GH", "IJ", "A", "AA", "AAA"};
+    
+    for (int i = 0; i < 8; i++) {
+        int sum = 0;
+        for (int j = 0; testKeys[i][j] != '\0'; j++) {
+            sum += (int)testKeys[i][j];
+        }
+        int index = sum % TABLE_SIZE;
+        cout << "Key: '" << testKeys[i] << "' | ASCII Sum: " << sum 
+             << " | Hash Index: " << index << endl;
+    }
+    
+    cout << "\n====================================\n";
+    cout << "Hash Function Formula: (Sum of ASCII values) MOD 100\n";
+    cout << "Collision Resolution: Separate Chaining (Linked Lists)\n";
+    cout << "====================================\n";
+    
+    // ==================== DEMO 8: LARGER DATASET ====================
+    cout << "\n\n--- DEMO 5: LARGE DATASET TEST ---\n\n";
+    
+    DictionaryHashTable largeDict;
+    
+    cout << "Adding 15 entries to dictionary:\n";
+    cout << "====================================\n";
+    
+    largeDict.addRecord("DATA", "Information");
+    largeDict.addRecord("HASH", "Function");
+    largeDict.addRecord("TABLE", "Structure");
+    largeDict.addRecord("CHAIN", "Linked List");
+    largeDict.addRecord("BUCKET", "Array Index");
+    largeDict.addRecord("KEY", "Identifier");
+    largeDict.addRecord("VALUE", "Content");
+    largeDict.addRecord("SEARCH", "Find");
+    largeDict.addRecord("INSERT", "Add");
+    largeDict.addRecord("DELETE", "Remove");
+    largeDict.addRecord("COLLISION", "Conflict");
+    largeDict.addRecord("INDEX", "Position");
+    largeDict.addRecord("NODE", "Element");
+    largeDict.addRecord("LINK", "Connection");
+    largeDict.addRecord("LOAD", "Density");
+    
+    largeDict.printDictionary();
+    
+    cout << "\nSearching for entries:\n";
+    cout << "====================================\n";
+    largeDict.wordSearch("HASH");
+    largeDict.wordSearch("COLLISION");
+    largeDict.wordSearch("NOTFOUND");
+    
+    return 0;
+}

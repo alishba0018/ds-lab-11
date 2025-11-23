@@ -1,0 +1,428 @@
+#include <iostream>
+using namespace std;
+
+#define TABLE_SIZE 15
+
+// Student record structure
+struct StudentRecord {
+    int rollNumber;
+    char name[50];
+    bool isOccupied;
+    bool isDeleted;  // For tombstone deletion
+    
+    StudentRecord() : rollNumber(0), isOccupied(false), isDeleted(false) {
+        name[0] = '\0';
+    }
+};
+
+class StudentHashTable {
+private:
+    StudentRecord table[TABLE_SIZE];
+    
+    // Hash function: Simple modulo hash
+    int hashFunction(int rollNumber) {
+        return rollNumber % TABLE_SIZE;
+    }
+    
+    // Quadratic probing: (index + attempt^2) % TABLE_SIZE
+    int quadraticProbe(int index, int attempt) {
+        return (index + attempt * attempt) % TABLE_SIZE;
+    }
+    
+    // Display a single entry with details
+    void displayEntry(int index) {
+        cout << "Index " << index << ": ";
+        if (table[index].isOccupied && !table[index].isDeleted) {
+            cout << "Occupied | Roll: " << table[index].rollNumber 
+                 << " | Name: " << table[index].name << endl;
+        } else if (table[index].isDeleted) {
+            cout << "Deleted (Tombstone)\n";
+        } else {
+            cout << "Empty\n";
+        }
+    }
+    
+public:
+    StudentHashTable() {
+        // All slots initialized by default constructor
+    }
+    
+    // INSERT: Insert student record using quadratic probing
+    void insertRecord(int rollNumber, const char* name) {
+        cout << "\n--- Inserting Record ---\n";
+        cout << "Roll Number: " << rollNumber << " | Name: " << name << endl;
+        
+        int index = hashFunction(rollNumber);
+        cout << "Initial hash index: " << index << endl;
+        
+        int attempt = 0;
+        int probeIndex;
+        int insertedAt = -1;
+        
+        // Quadratic probing
+        while (attempt < TABLE_SIZE) {
+            probeIndex = quadraticProbe(index, attempt);
+            
+            cout << "  Attempt " << attempt << ": Checking index " << probeIndex;
+            
+            // If slot is empty or deleted, we can insert
+            if (!table[probeIndex].isOccupied || table[probeIndex].isDeleted) {
+                table[probeIndex].rollNumber = rollNumber;
+                strcpy(table[probeIndex].name, name);
+                table[probeIndex].isOccupied = true;
+                table[probeIndex].isDeleted = false;
+                insertedAt = probeIndex;
+                cout << " [EMPTY] -> Inserted here!\n";
+                break;
+            }
+            
+            // If same roll number exists, update
+            if (table[probeIndex].rollNumber == rollNumber) {
+                cout << " [DUPLICATE ROLL] -> Updating...\n";
+                strcpy(table[probeIndex].name, name);
+                insertedAt = probeIndex;
+                break;
+            }
+            
+            cout << " [OCCUPIED]\n";
+            attempt++;
+        }
+        
+        if (insertedAt != -1) {
+            cout << "✓ Record inserted/updated at index " << insertedAt << "\n";
+            displayEntry(insertedAt);
+        } else {
+            cout << "✗ Hash table is FULL! Could not insert record.\n";
+        }
+        cout << endl;
+    }
+    
+    // SEARCH: Search for student record using quadratic probing
+    void searchRecord(int rollNumber) {
+        cout << "\n--- Searching Record ---\n";
+        cout << "Roll Number: " << rollNumber << endl;
+        
+        int index = hashFunction(rollNumber);
+        cout << "Initial hash index: " << index << endl;
+        
+        int attempt = 0;
+        int probeIndex;
+        
+        // Quadratic probing for search
+        while (attempt < TABLE_SIZE) {
+            probeIndex = quadraticProbe(index, attempt);
+            
+            cout << "  Attempt " << attempt << ": Checking index " << probeIndex;
+            
+            // If slot is empty (and not deleted), stop searching
+            if (!table[probeIndex].isOccupied && !table[probeIndex].isDeleted) {
+                cout << " [EMPTY] -> Stop searching\n";
+                break;
+            }
+            
+            // Skip deleted slots
+            if (table[probeIndex].isDeleted) {
+                cout << " [DELETED] -> Continue\n";
+                attempt++;
+                continue;
+            }
+            
+            // Found matching roll number
+            if (table[probeIndex].rollNumber == rollNumber && table[probeIndex].isOccupied) {
+                cout << " [FOUND]\n";
+                cout << "✓ Record Found!\n";
+                cout << "  Index: " << probeIndex << endl;
+                cout << "  Roll Number: " << table[probeIndex].rollNumber << endl;
+                cout << "  Name: " << table[probeIndex].name << "\n";
+                displayEntry(probeIndex);
+                cout << endl;
+                return;
+            }
+            
+            cout << " [OCCUPIED - DIFFERENT ROLL]\n";
+            attempt++;
+        }
+        
+        cout << "✗ Record not found! Roll number " << rollNumber << " does not exist in hash table.\n";
+        cout << endl;
+    }
+    
+    // DELETE: Delete a student record
+    void deleteRecord(int rollNumber) {
+        cout << "\n--- Deleting Record ---\n";
+        cout << "Roll Number: " << rollNumber << endl;
+        
+        int index = hashFunction(rollNumber);
+        cout << "Initial hash index: " << index << endl;
+        
+        int attempt = 0;
+        int probeIndex;
+        
+        // Quadratic probing for deletion
+        while (attempt < TABLE_SIZE) {
+            probeIndex = quadraticProbe(index, attempt);
+            
+            cout << "  Attempt " << attempt << ": Checking index " << probeIndex;
+            
+            // If slot is empty and not deleted, stop
+            if (!table[probeIndex].isOccupied && !table[probeIndex].isDeleted) {
+                cout << " [EMPTY] -> Stop searching\n";
+                break;
+            }
+            
+            // Skip deleted slots
+            if (table[probeIndex].isDeleted) {
+                cout << " [DELETED] -> Continue\n";
+                attempt++;
+                continue;
+            }
+            
+            // Found matching roll number
+            if (table[probeIndex].rollNumber == rollNumber && table[probeIndex].isOccupied) {
+                cout << " [FOUND]\n";
+                table[probeIndex].isOccupied = false;
+                table[probeIndex].isDeleted = true;  // Tombstone
+                cout << "✓ Record deleted successfully!\n";
+                cout << "  Deleted from index: " << probeIndex << endl;
+                cout << "  (Marked as tombstone for search continuity)\n";
+                cout << endl;
+                return;
+            }
+            
+            cout << " [OCCUPIED - DIFFERENT ROLL]\n";
+            attempt++;
+        }
+        
+        cout << "✗ Record not found! Could not delete roll number " << rollNumber << ".\n";
+        cout << endl;
+    }
+    
+    // DISPLAY: Display entire hash table
+    void display() {
+        cout << "\n========== STUDENT HASH TABLE CONTENTS ==========\n";
+        cout << "Table Size: " << TABLE_SIZE << endl;
+        cout << "================================================\n\n";
+        
+        int occupiedCount = 0;
+        int deletedCount = 0;
+        int emptyCount = 0;
+        
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            if (table[i].isOccupied && !table[i].isDeleted) {
+                cout << "Index " << i << ": [Roll: " << table[i].rollNumber 
+                     << " | Name: " << table[i].name << "] (Occupied)\n";
+                occupiedCount++;
+            } else if (table[i].isDeleted) {
+                cout << "Index " << i << ": [TOMBSTONE]\n";
+                deletedCount++;
+            } else {
+                cout << "Index " << i << ": [EMPTY]\n";
+                emptyCount++;
+            }
+        }
+        
+        cout << "\n================================================\n";
+        cout << "Statistics:\n";
+        cout << "  Occupied Slots: " << occupiedCount << endl;
+        cout << "  Deleted Slots (Tombstones): " << deletedCount << endl;
+        cout << "  Empty Slots: " << emptyCount << endl;
+        cout << "  Load Factor: " << (float)occupiedCount / TABLE_SIZE << endl;
+        cout << "================================================\n\n";
+    }
+    
+    // Display probe sequence for a given roll number
+    void displayProbeSequence(int rollNumber) {
+        cout << "\n--- Probe Sequence for Roll Number " << rollNumber << " ---\n";
+        int index = hashFunction(rollNumber);
+        cout << "Initial hash index: " << index << endl;
+        cout << "Quadratic probing sequence:\n";
+        
+        for (int attempt = 0; attempt < TABLE_SIZE && attempt < 5; attempt++) {
+            int probeIndex = quadraticProbe(index, attempt);
+            cout << "  Attempt " << attempt << ": index = (" << index << " + " 
+                 << attempt << "^2) % " << TABLE_SIZE << " = " << probeIndex << endl;
+        }
+        cout << endl;
+    }
+    
+    // Get table size
+    int getTableSize() {
+        return TABLE_SIZE;
+    }
+    
+    // Clear hash table
+    void clearTable() {
+        cout << "Clearing hash table...\n";
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            table[i].isOccupied = false;
+            table[i].isDeleted = false;
+            table[i].rollNumber = 0;
+            table[i].name[0] = '\0';
+        }
+        cout << "✓ Hash table cleared!\n\n";
+    }
+};
+
+// ==================== MAIN ====================
+int main() {
+    cout << "========== TASK 5: STUDENT HASH TABLE WITH QUADRATIC PROBING ==========\n";
+    cout << "Table Size: " << TABLE_SIZE << endl;
+    cout << "Collision Resolution: Quadratic Probing\n";
+    cout << "Formula: (index + attempt^2) % " << TABLE_SIZE << "\n";
+    cout << "=========================================================================\n";
+    
+    StudentHashTable hashTable;
+    
+    // ==================== DEMO 1: INSERTION WITHOUT COLLISION ====================
+    cout << "\n\n--- DEMO 1: INSERTION WITHOUT COLLISIONS ---\n";
+    cout << "===========================================\n";
+    
+    hashTable.insertRecord(5, "Ali Ahmed");
+    hashTable.insertRecord(20, "Zainab Khan");
+    hashTable.insertRecord(12, "Hassan Ali");
+    hashTable.insertRecord(7, "Fatima Malik");
+    hashTable.insertRecord(19, "Usman Farooq");
+    
+    hashTable.display();
+    
+    // ==================== DEMO 2: INSERTION WITH COLLISIONS ====================
+    cout << "\n--- DEMO 2: INSERTION WITH COLLISIONS ---\n";
+    cout << "========================================\n";
+    cout << "These will hash to same indices, triggering quadratic probing:\n";
+    
+    hashTable.insertRecord(35, "Amina Khan");     // 35 % 15 = 5
+    hashTable.insertRecord(50, "Bilal Ahmed");    // 50 % 15 = 5
+    hashTable.insertRecord(65, "Saira Ali");      // 65 % 15 = 5
+    
+    hashTable.display();
+    
+    // ==================== DEMO 3: SEARCH OPERATIONS ====================
+    cout << "\n--- DEMO 3: SEARCH OPERATIONS ---\n";
+    cout << "=================================\n";
+    
+    hashTable.searchRecord(20);
+    hashTable.searchRecord(35);
+    hashTable.searchRecord(99);
+    
+    // ==================== DEMO 4: PROBE SEQUENCE EXPLANATION ====================
+    cout << "\n--- DEMO 4: QUADRATIC PROBING SEQUENCE ---\n";
+    cout << "==========================================\n";
+    
+    hashTable.displayProbeSequence(35);
+    hashTable.displayProbeSequence(50);
+    hashTable.displayProbeSequence(100);
+    
+    // ==================== DEMO 5: DELETE OPERATIONS ====================
+    cout << "\n--- DEMO 5: DELETE OPERATIONS ---\n";
+    cout << "=================================\n";
+    
+    hashTable.deleteRecord(35);
+    hashTable.deleteRecord(20);
+    hashTable.deleteRecord(99);
+    
+    hashTable.display();
+    
+    // ==================== DEMO 6: SEARCH AFTER DELETION ====================
+    cout << "\n--- DEMO 6: SEARCH AFTER DELETION ---\n";
+    cout << "====================================\n";
+    
+    hashTable.searchRecord(50);  // Should find even after 35 deleted
+    hashTable.searchRecord(35);  // Should not find (deleted)
+    
+    // ==================== DEMO 7: UPDATE OPERATION ====================
+    cout << "\n--- DEMO 7: UPDATE OPERATION ---\n";
+    cout << "================================\n";
+    
+    cout << "Inserting duplicate roll number with different name:\n";
+    hashTable.insertRecord(50, "Bilal Ahmed Updated");
+    
+    hashTable.display();
+    
+    // ==================== DEMO 8: LARGE DATASET ====================
+    cout << "\n--- DEMO 8: LARGE DATASET TEST ---\n";
+    cout << "===================================\n";
+    
+    StudentHashTable largeTable;
+    
+    cout << "Inserting 10 student records:\n";
+    largeTable.insertRecord(101, "Student One");
+    largeTable.insertRecord(102, "Student Two");
+    largeTable.insertRecord(103, "Student Three");
+    largeTable.insertRecord(104, "Student Four");
+    largeTable.insertRecord(105, "Student Five");
+    largeTable.insertRecord(106, "Student Six");
+    largeTable.insertRecord(107, "Student Seven");
+    largeTable.insertRecord(108, "Student Eight");
+    largeTable.insertRecord(109, "Student Nine");
+    largeTable.insertRecord(110, "Student Ten");
+    
+    largeTable.display();
+    
+    cout << "\nSearching for records:\n";
+    largeTable.searchRecord(104);
+    largeTable.searchRecord(110);
+    largeTable.searchRecord(111);
+    
+    cout << "\nDeleting records:\n";
+    largeTable.deleteRecord(104);
+    largeTable.deleteRecord(107);
+    
+    largeTable.display();
+    
+    // ==================== DEMO 9: COLLISION SCENARIO ====================
+    cout << "\n--- DEMO 9: MULTIPLE COLLISIONS SCENARIO ---\n";
+    cout << "===========================================\n";
+    
+    StudentHashTable collisionTable;
+    
+    cout << "Inserting records that will all hash to index 0:\n";
+    cout << "0 % 15 = 0\n";
+    cout << "15 % 15 = 0\n";
+    cout << "30 % 15 = 0\n";
+    cout << "45 % 15 = 0\n\n";
+    
+    collisionTable.insertRecord(0, "Roll Zero");
+    collisionTable.insertRecord(15, "Roll Fifteen");
+    collisionTable.insertRecord(30, "Roll Thirty");
+    collisionTable.insertRecord(45, "Roll FortyFive");
+    
+    collisionTable.display();
+    
+    cout << "Searching for these records:\n";
+    collisionTable.searchRecord(0);
+    collisionTable.searchRecord(15);
+    collisionTable.searchRecord(30);
+    collisionTable.searchRecord(45);
+    
+    // ==================== ALGORITHM EXPLANATION ====================
+    cout << "\n\n========== QUADRATIC PROBING EXPLANATION ==========\n";
+    cout << "====================================================\n\n";
+    
+    cout << "QUADRATIC PROBING FORMULA:\n";
+    cout << "  probe_index = (hash_index + attempt^2) % TABLE_SIZE\n\n";
+    
+    cout << "Example: Roll Number 50 (hash to index 5)\n";
+    cout << "  Attempt 0: (5 + 0^2) % 15 = 5\n";
+    cout << "  Attempt 1: (5 + 1^2) % 15 = 6\n";
+    cout << "  Attempt 2: (5 + 2^2) % 15 = 9\n";
+    cout << "  Attempt 3: (5 + 3^2) % 15 = 14\n";
+    cout << "  Attempt 4: (5 + 4^2) % 15 = 6 (wraps around)\n\n";
+    
+    cout << "ADVANTAGES:\n";
+    cout << "  - Reduces primary clustering better than linear probing\n";
+    cout << "  - Good distribution when table size is prime\n";
+    cout << "  - Search time is O(1) average case\n\n";
+    
+    cout << "DISADVANTAGES:\n";
+    cout << "  - Secondary clustering can occur\n";
+    cout << "  - May not probe all slots with some table sizes\n";
+    cout << "  - Requires tombstone deletion for correctness\n\n";
+    
+    cout << "TIME COMPLEXITIES:\n";
+    cout << "  - Insert: O(1) average, O(n) worst case\n";
+    cout << "  - Search: O(1) average, O(n) worst case\n";
+    cout << "  - Delete: O(1) average, O(n) worst case\n";
+    cout << "====================================================\n";
+    
+    return 0;
+}

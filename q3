@@ -1,0 +1,359 @@
+#include <iostream>
+#include <list>
+using namespace std;
+
+#define TABLE_SIZE 10
+
+// Node structure for storing key-value pairs
+struct HashNode {
+    int key;
+    string value;
+    
+    HashNode(int k, string v) : key(k), value(v) {}
+    
+    bool operator==(const HashNode& other) const {
+        return key == other.key;
+    }
+};
+
+class HashTable {
+private:
+    list<HashNode> table[TABLE_SIZE];  // Array of linked lists using STL
+    
+    // Hash function: Simple modulo hash
+    int hashFunction(int key) {
+        return key % TABLE_SIZE;
+    }
+    
+    // Display a single bucket
+    void displayBucket(int index) {
+        if (index < 0 || index >= TABLE_SIZE) {
+            cout << "Invalid index!\n";
+            return;
+        }
+        
+        if (table[index].empty()) {
+            cout << "Index " << index << ": [Empty]\n";
+        } else {
+            cout << "Index " << index << ": ";
+            for (auto& node : table[index]) {
+                cout << "[" << node.key << " -> " << node.value << "] ";
+            }
+            cout << endl;
+        }
+    }
+    
+public:
+    HashTable() {
+        // Lists are automatically created
+    }
+    
+    // INSERT: Add a key-value pair to hash table
+    void insert(int key, string value) {
+        int index = hashFunction(key);
+        
+        cout << "Inserting Key: " << key << ", Value: " << value;
+        cout << " | Hash Index: " << index << endl;
+        
+        // Check if key already exists
+        for (auto& node : table[index]) {
+            if (node.key == key) {
+                cout << "  ✓ Key already exists. Updating value...\n";
+                node.value = value;
+                return;
+            }
+        }
+        
+        // Insert new node at the beginning of the list
+        table[index].push_front(HashNode(key, value));
+        cout << "  ✓ Inserted successfully!\n\n";
+    }
+    
+    // SEARCH: Find and retrieve value by key
+    void search(int key) {
+        int index = hashFunction(key);
+        
+        cout << "Searching for Key: " << key << " | Hash Index: " << index << endl;
+        
+        for (auto& node : table[index]) {
+            if (node.key == key) {
+                cout << "  ✓ Found! Value: " << node.value << "\n\n";
+                return;
+            }
+        }
+        
+        cout << "  ✗ Key not found!\n\n";
+    }
+    
+    // DELETE: Remove a key-value pair from hash table
+    void deleteKey(int key) {
+        int index = hashFunction(key);
+        
+        cout << "Deleting Key: " << key << " | Hash Index: " << index << endl;
+        
+        // Find and remove the node
+        for (auto it = table[index].begin(); it != table[index].end(); ++it) {
+            if (it->key == key) {
+                table[index].erase(it);
+                cout << "  ✓ Key deleted successfully!\n\n";
+                return;
+            }
+        }
+        
+        cout << "  ✗ Key not found! Deletion failed!\n\n";
+    }
+    
+    // DISPLAY: Print the entire hash table
+    void display() {
+        cout << "\n========== HASH TABLE CONTENTS ==========\n";
+        cout << "Table Size: " << TABLE_SIZE << endl;
+        cout << "========================================\n";
+        
+        int emptyBuckets = 0;
+        int occupiedBuckets = 0;
+        int totalElements = 0;
+        
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            if (table[i].empty()) {
+                cout << "Index " << i << ": [Empty]\n";
+                emptyBuckets++;
+            } else {
+                occupiedBuckets++;
+                cout << "Index " << i << ": ";
+                for (auto& node : table[i]) {
+                    cout << "[" << node.key << " -> " << node.value << "] ";
+                    totalElements++;
+                }
+                cout << endl;
+            }
+        }
+        
+        cout << "\n========================================\n";
+        cout << "Statistics:\n";
+        cout << "  Total Elements: " << totalElements << endl;
+        cout << "  Occupied Buckets: " << occupiedBuckets << endl;
+        cout << "  Empty Buckets: " << emptyBuckets << endl;
+        cout << "  Load Factor: " << (float)totalElements / TABLE_SIZE << endl;
+        cout << "========================================\n\n";
+    }
+    
+    // Display specific bucket
+    void displayBucketContent(int index) {
+        displayBucket(index);
+    }
+    
+    // Get table size
+    int getTableSize() {
+        return TABLE_SIZE;
+    }
+    
+    // Check if key exists
+    bool containsKey(int key) {
+        int index = hashFunction(key);
+        for (auto& node : table[index]) {
+            if (node.key == key) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // Get value by key
+    string getValue(int key) {
+        int index = hashFunction(key);
+        for (auto& node : table[index]) {
+            if (node.key == key) {
+                return node.value;
+            }
+        }
+        return "";
+    }
+    
+    // Get all keys
+    void displayAllKeys() {
+        cout << "\nAll Keys in Hash Table:\n";
+        cout << "=======================\n";
+        int count = 0;
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            for (auto& node : table[i]) {
+                cout << "  Key " << node.key << " at index " << i << endl;
+                count++;
+            }
+        }
+        if (count == 0) {
+            cout << "  Hash table is empty!\n";
+        }
+        cout << "=======================\n\n";
+    }
+    
+    // Clear hash table
+    void clear() {
+        cout << "Clearing hash table...\n";
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            table[i].clear();
+        }
+        cout << "✓ Hash table cleared!\n\n";
+    }
+};
+
+// ==================== MAIN ====================
+int main() {
+    cout << "========== TASK 3: HASH TABLE USING STL LIST ==========\n\n";
+    
+    HashTable hashTable;
+    
+    // ==================== DEMO 1: INSERT OPERATIONS ====================
+    cout << "--- DEMO 1: INSERT OPERATIONS ---\n";
+    cout << "===================================\n\n";
+    
+    hashTable.insert(5, "Apple");
+    hashTable.insert(15, "Banana");
+    hashTable.insert(25, "Cherry");
+    hashTable.insert(35, "Date");
+    hashTable.insert(45, "Elderberry");
+    hashTable.insert(7, "Fig");
+    hashTable.insert(17, "Grape");
+    hashTable.insert(27, "Honeydew");
+    
+    hashTable.display();
+    
+    // ==================== DEMO 2: SEARCH OPERATIONS ====================
+    cout << "\n--- DEMO 2: SEARCH OPERATIONS ---\n";
+    cout << "===================================\n\n";
+    
+    hashTable.search(15);
+    hashTable.search(7);
+    hashTable.search(100);
+    hashTable.search(27);
+    
+    // ==================== DEMO 3: COLLISION HANDLING ====================
+    cout << "\n--- DEMO 3: COLLISION HANDLING (Keys hashing to same index) ---\n";
+    cout << "===============================================================\n\n";
+    
+    cout << "Adding keys that hash to same index:\n";
+    cout << "Key 5 -> Index: " << (5 % TABLE_SIZE) << endl;
+    cout << "Key 15 -> Index: " << (15 % TABLE_SIZE) << endl;
+    cout << "Key 25 -> Index: " << (25 % TABLE_SIZE) << endl;
+    cout << "All hash to index 5, so they form a chain!\n\n";
+    
+    hashTable.displayBucketContent(5);
+    
+    // ==================== DEMO 4: UPDATE OPERATION ====================
+    cout << "\n--- DEMO 4: UPDATE OPERATION ---\n";
+    cout << "===================================\n\n";
+    
+    cout << "Updating existing keys:\n";
+    hashTable.insert(15, "Updated_Banana");
+    hashTable.insert(7, "Updated_Fig");
+    
+    hashTable.display();
+    
+    // ==================== DEMO 5: DELETE OPERATIONS ====================
+    cout << "\n--- DEMO 5: DELETE OPERATIONS ---\n";
+    cout << "===================================\n\n";
+    
+    hashTable.deleteKey(15);
+    hashTable.deleteKey(7);
+    hashTable.deleteKey(100);  // Non-existent key
+    
+    hashTable.display();
+    
+    // ==================== DEMO 6: ALL KEYS ====================
+    hashTable.displayAllKeys();
+    
+    // ==================== DEMO 7: CONTAINS AND GET VALUE ====================
+    cout << "\n--- DEMO 6: CHECK KEY AND GET VALUE ---\n";
+    cout << "=========================================\n\n";
+    
+    if (hashTable.containsKey(5)) {
+        cout << "Key 5 exists. Value: " << hashTable.getValue(5) << endl;
+    }
+    
+    if (hashTable.containsKey(25)) {
+        cout << "Key 25 exists. Value: " << hashTable.getValue(25) << endl;
+    }
+    
+    if (!hashTable.containsKey(100)) {
+        cout << "Key 100 does not exist.\n";
+    }
+    cout << endl;
+    
+    // ==================== DEMO 8: LARGE DATASET ====================
+    cout << "\n--- DEMO 7: LARGE DATASET TEST ---\n";
+    cout << "====================================\n\n";
+    
+    HashTable largeHashTable;
+    
+    cout << "Inserting 15 key-value pairs:\n";
+    for (int i = 1; i <= 15; i++) {
+        string val = "Value_" + to_string(i * 10);
+        largeHashTable.insert(i * 10, val);
+    }
+    
+    largeHashTable.display();
+    
+    // ==================== DEMO 9: HASH DISTRIBUTION ====================
+    cout << "\n--- DEMO 8: HASH DISTRIBUTION ANALYSIS ---\n";
+    cout << "============================================\n\n";
+    
+    cout << "Key Distribution Across Buckets:\n";
+    cout << "=================================\n";
+    for (int i = 1; i <= 15; i++) {
+        int key = i * 10;
+        int index = key % TABLE_SIZE;
+        cout << "Key " << key << " -> Index " << index << endl;
+    }
+    cout << endl;
+    
+    // ==================== DEMO 10: CLEAR OPERATION ====================
+    cout << "\n--- DEMO 9: CLEAR OPERATION ---\n";
+    cout << "==================================\n\n";
+    
+    largeHashTable.clear();
+    largeHashTable.display();
+    
+    // ==================== DEMO 11: COMPREHENSIVE TEST ====================
+    cout << "\n--- DEMO 10: COMPREHENSIVE TEST ---\n";
+    cout << "=====================================\n\n";
+    
+    HashTable testTable;
+    
+    cout << "Test Sequence:\n";
+    cout << "1. Insert multiple records\n";
+    cout << "2. Search for records\n";
+    cout << "3. Delete records\n";
+    cout << "4. Display final table\n\n";
+    
+    testTable.insert(11, "Record_11");
+    testTable.insert(21, "Record_21");
+    testTable.insert(31, "Record_31");
+    testTable.insert(41, "Record_41");
+    testTable.insert(12, "Record_12");
+    testTable.insert(22, "Record_22");
+    
+    testTable.display();
+    
+    cout << "Searching for keys:\n";
+    testTable.search(21);
+    testTable.search(12);
+    testTable.search(99);
+    
+    cout << "Deleting keys:\n";
+    testTable.deleteKey(21);
+    testTable.deleteKey(31);
+    
+    testTable.display();
+    
+    // ==================== SUMMARY ====================
+    cout << "\n========== SUMMARY OF OPERATIONS ==========\n";
+    cout << "Insert: Add key-value pair (O(1) average)\n";
+    cout << "Search: Find value by key (O(1) average)\n";
+    cout << "Delete: Remove key-value pair (O(1) average)\n";
+    cout << "Display: Show all entries (O(n))\n\n";
+    cout << "Collision Resolution: Separate Chaining (STL List)\n";
+    cout << "Hash Function: key % TABLE_SIZE\n";
+    cout << "Table Size: " << TABLE_SIZE << "\n";
+    cout << "==========================================\n";
+    
+    return 0;
+}

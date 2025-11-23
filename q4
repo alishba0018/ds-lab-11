@@ -1,0 +1,304 @@
+#include <iostream>
+using namespace std;
+
+struct HashNode {
+    int sum;
+    int a;
+    int b;
+    bool isOccupied;
+    
+    HashNode() : sum(0), a(0), b(0), isOccupied(false) {}
+};
+
+class PairFinder {
+private:
+    HashNode* hashTable;
+    int tableSize;
+    
+    // Hash function: Simple modulo hash
+    int hashFunction(int key) {
+        return ((key % tableSize) + tableSize) % tableSize;
+    }
+    
+    // Linear probing for collision resolution
+    int findSlot(int sum) {
+        int index = hashFunction(sum);
+        int start = index;
+        
+        while (hashTable[index].isOccupied) {
+            if (hashTable[index].sum == sum) {
+                return index;  // Found exact sum
+            }
+            index = (index + 1) % tableSize;
+            if (index == start) return -1;  // Table full
+        }
+        return index;  // Found empty slot
+    }
+    
+    // Display hash table
+    void displayHashTable() {
+        cout << "\n--- Hash Table Contents ---\n";
+        cout << "Index | Sum | Pair (a, b)\n";
+        cout << "============================\n";
+        for (int i = 0; i < tableSize; i++) {
+            if (hashTable[i].isOccupied) {
+                cout << i << "     | " << hashTable[i].sum << "  | ("
+                     << hashTable[i].a << ", " << hashTable[i].b << ")\n";
+            }
+        }
+        cout << "============================\n\n";
+    }
+    
+public:
+    PairFinder(int size = 100) : tableSize(size) {
+        hashTable = new HashNode[tableSize];
+    }
+    
+    // Main function to find two pairs with equal sum
+    void findTwoPairs(int arr[], int n) {
+        cout << "\n========== FINDING TWO PAIRS WITH EQUAL SUM ==========\n\n";
+        
+        // Display input array
+        cout << "Input Array: {";
+        for (int i = 0; i < n; i++) {
+            cout << arr[i];
+            if (i < n - 1) cout << ", ";
+        }
+        cout << "}\n";
+        cout << "Array Size: " << n << "\n\n";
+        
+        // Clear hash table
+        for (int i = 0; i < tableSize; i++) {
+            hashTable[i].isOccupied = false;
+        }
+        
+        cout << "--- PROCESS: Calculating pair sums and storing ---\n\n";
+        
+        bool found = false;
+        int pair1_a = 0, pair1_b = 0, pair2_a = 0, pair2_b = 0;
+        int commonSum = 0;
+        
+        // Generate all pairs and check for equal sums
+        for (int i = 0; i < n && !found; i++) {
+            for (int j = i + 1; j < n && !found; j++) {
+                int sum = arr[i] + arr[j];
+                
+                cout << "Pair (" << arr[i] << ", " << arr[j] << "): Sum = " << sum;
+                
+                int index = hashFunction(sum);
+                int originalIndex = index;
+                
+                // Linear probing
+                while (hashTable[index].isOccupied) {
+                    if (hashTable[index].sum == sum) {
+                        // Found a pair with same sum
+                        cout << " -> MATCH FOUND!\n";
+                        cout << "  Existing pair at index " << index << ": ("
+                             << hashTable[index].a << ", " << hashTable[index].b << ")\n";
+                        cout << "  New pair: (" << arr[i] << ", " << arr[j] << ")\n";
+                        
+                        // Store the pairs
+                        pair1_a = hashTable[index].a;
+                        pair1_b = hashTable[index].b;
+                        pair2_a = arr[i];
+                        pair2_b = arr[j];
+                        commonSum = sum;
+                        found = true;
+                        break;
+                    }
+                    index = (index + 1) % tableSize;
+                    if (index == originalIndex) break;  // Table full or wrapped
+                }
+                
+                if (!found && !hashTable[index].isOccupied) {
+                    // Insert new pair
+                    hashTable[index].sum = sum;
+                    hashTable[index].a = arr[i];
+                    hashTable[index].b = arr[j];
+                    hashTable[index].isOccupied = true;
+                    cout << " -> Stored at index " << index << "\n";
+                }
+            }
+        }
+        
+        displayHashTable();
+        
+        // Output result
+        cout << "--- RESULT ---\n";
+        if (found) {
+            cout << "✓ PAIRS FOUND!\n";
+            cout << "  Pair 1: (" << pair1_a << ", " << pair1_b << ")\n";
+            cout << "  Pair 2: (" << pair2_a << ", " << pair2_b << ")\n";
+            cout << "  Common Sum: " << commonSum << "\n";
+            cout << "  Verification: " << pair1_a << " + " << pair1_b 
+                 << " = " << (pair1_a + pair1_b) << ", "
+                 << pair2_a << " + " << pair2_b << " = " << (pair2_a + pair2_b) << "\n";
+        } else {
+            cout << "✗ NO PAIRS FOUND!\n";
+            cout << "  No two distinct pairs with equal sum exist.\n";
+        }
+        cout << "\n";
+    }
+    
+    ~PairFinder() {
+        delete[] hashTable;
+    }
+};
+
+// ==================== ALTERNATIVE METHOD: WITHOUT HASH TABLE ====================
+void findTwoPairsSimple(int arr[], int n) {
+    cout << "\n========== FINDING TWO PAIRS (SIMPLE METHOD) ==========\n\n";
+    
+    cout << "Input Array: {";
+    for (int i = 0; i < n; i++) {
+        cout << arr[i];
+        if (i < n - 1) cout << ", ";
+    }
+    cout << "}\n";
+    cout << "Array Size: " << n << "\n\n";
+    
+    cout << "--- METHOD: Brute force with all pair sums ---\n\n";
+    
+    bool found = false;
+    int pair1_a, pair1_b, pair2_a, pair2_b, commonSum;
+    
+    // Generate all pairs and store sums
+    for (int i = 0; i < n && !found; i++) {
+        for (int j = i + 1; j < n && !found; j++) {
+            int sum1 = arr[i] + arr[j];
+            
+            // Check with remaining pairs
+            for (int k = i + 1; k < n && !found; k++) {
+                for (int l = k + 1; l < n && !found; l++) {
+                    if (i == k && j == l) continue;  // Skip same pair
+                    
+                    int sum2 = arr[k] + arr[l];
+                    
+                    if (sum1 == sum2) {
+                        cout << "Found Equal Sums:\n";
+                        cout << "  Pair 1: (" << arr[i] << ", " << arr[j] << ") = " << sum1 << "\n";
+                        cout << "  Pair 2: (" << arr[k] << ", " << arr[l] << ") = " << sum2 << "\n";
+                        
+                        pair1_a = arr[i];
+                        pair1_b = arr[j];
+                        pair2_a = arr[k];
+                        pair2_b = arr[l];
+                        commonSum = sum1;
+                        found = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    cout << "\n--- RESULT ---\n";
+    if (found) {
+        cout << "✓ PAIRS FOUND!\n";
+        cout << "  Pair 1: (" << pair1_a << ", " << pair1_b << ")\n";
+        cout << "  Pair 2: (" << pair2_a << ", " << pair2_b << ")\n";
+        cout << "  Common Sum: " << commonSum << "\n";
+    } else {
+        cout << "✗ NO PAIRS FOUND!\n";
+    }
+    cout << "\n";
+}
+
+// ==================== MAIN ====================
+int main() {
+    cout << "========== TASK 4: FIND TWO PAIRS WITH EQUAL SUM ==========\n";
+    
+    PairFinder pairFinder;
+    
+    // ==================== TEST CASE 1 ====================
+    cout << "\n\n########################## TEST CASE 1 ##########################\n";
+    cout << "Input: {3, 4, 7, 1, 2, 9, 8}\n";
+    cout << "Expected Output: (3, 8) and (4, 7) because 3+8 = 4+7 = 11\n";
+    
+    int arr1[] = {3, 4, 7, 1, 2, 9, 8};
+    int n1 = 7;
+    
+    pairFinder.findTwoPairs(arr1, n1);
+    
+    // ==================== TEST CASE 2 ====================
+    cout << "\n\n########################## TEST CASE 2 ##########################\n";
+    cout << "Input: {3, 4, 7, 1, 12, 9}\n";
+    cout << "Expected Output: (4, 12) and (7, 9) because 4+12 = 7+9 = 16\n";
+    
+    int arr2[] = {3, 4, 7, 1, 12, 9};
+    int n2 = 6;
+    
+    PairFinder pairFinder2;
+    pairFinder2.findTwoPairs(arr2, n2);
+    
+    // ==================== TEST CASE 3 ====================
+    cout << "\n\n########################## TEST CASE 3 ##########################\n";
+    cout << "Input: {65, 30, 7, 90, 1, 9, 8}\n";
+    cout << "Expected Output: No pairs found\n";
+    
+    int arr3[] = {65, 30, 7, 90, 1, 9, 8};
+    int n3 = 7;
+    
+    PairFinder pairFinder3;
+    pairFinder3.findTwoPairs(arr3, n3);
+    
+    // ==================== TEST CASE 4 ====================
+    cout << "\n\n########################## TEST CASE 4 ##########################\n";
+    cout << "Input: {1, 5, 7, -1, 5}\n";
+    cout << "Expected Output: (1, 5) and (7, -1) because 1+5 = 7+(-1) = 6\n";
+    
+    int arr4[] = {1, 5, 7, -1, 5};
+    int n4 = 5;
+    
+    PairFinder pairFinder4;
+    pairFinder4.findTwoPairs(arr4, n4);
+    
+    // ==================== TEST CASE 5 ====================
+    cout << "\n\n########################## TEST CASE 5 ##########################\n";
+    cout << "Input: {2, 3, 4, 5, 6, 7}\n";
+    cout << "Expected Output: (2, 7) and (3, 6) because 2+7 = 3+6 = 9\n";
+    
+    int arr5[] = {2, 3, 4, 5, 6, 7};
+    int n5 = 6;
+    
+    PairFinder pairFinder5;
+    pairFinder5.findTwoPairs(arr5, n5);
+    
+    // ==================== COMPARISON: SIMPLE METHOD ====================
+    cout << "\n\n########################## COMPARISON: SIMPLE METHOD ##########################\n";
+    
+    cout << "Using brute force method for Test Case 1:\n";
+    findTwoPairsSimple(arr1, n1);
+    
+    // ==================== ALGORITHM EXPLANATION ====================
+    cout << "\n\n========== ALGORITHM EXPLANATION ==========\n\n";
+    
+    cout << "Method 1: HASHING (Current Implementation)\n";
+    cout << "============================================\n";
+    cout << "1. Create hash table with size = 100\n";
+    cout << "2. For each pair (arr[i], arr[j]):\n";
+    cout << "   - Calculate sum = arr[i] + arr[j]\n";
+    cout << "   - Hash the sum: index = sum % tableSize\n";
+    cout << "   - Check if sum already exists (collision)\n";
+    cout << "   - If collision found: pair exists! Return the pairs\n";
+    cout << "   - If no collision: store the pair\n";
+    cout << "3. If all pairs checked: return No pairs found\n\n";
+    cout << "Time Complexity: O(n^2) average case\n";
+    cout << "Space Complexity: O(n^2) for hash table\n\n";
+    
+    cout << "Method 2: BRUTE FORCE\n";
+    cout << "====================\n";
+    cout << "1. For each pair (i, j):\n";
+    cout << "2.   Calculate sum1 = arr[i] + arr[j]\n";
+    cout << "3.   For each other pair (k, l):\n";
+    cout << "4.     Calculate sum2 = arr[k] + arr[l]\n";
+    cout << "5.     If sum1 == sum2: return pairs\n";
+    cout << "6. If all pairs checked: return No pairs found\n\n";
+    cout << "Time Complexity: O(n^4)\n";
+    cout << "Space Complexity: O(1)\n\n";
+    
+    cout << "========== ALGORITHM COMPARISON ==========\n";
+    cout << "Hashing is much better for large arrays!\n";
+    cout << "=========================================\n";
+    
+    return 0;
+}
